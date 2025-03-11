@@ -1,0 +1,13 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - gosimple
+    - unused
+    - ineffassign
+    - gocritic
+    - revive
+    - prealloc
+    - gofmt
+    - whitespace
