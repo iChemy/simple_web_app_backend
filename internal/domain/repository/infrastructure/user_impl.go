@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/iChemy/simple_web_app_backend/internal/domain/entity"
 	"github.com/iChemy/simple_web_app_backend/internal/domain/repository"
+	"github.com/iChemy/simple_web_app_backend/internal/domain/repository/infrastructure/converter"
 	gormmodel "github.com/iChemy/simple_web_app_backend/internal/domain/repository/infrastructure/gorm_model"
 	"gorm.io/gorm"
 )
@@ -17,10 +18,10 @@ type userRepositoryImpl struct {
 }
 
 func NewUserRepository(db *gorm.DB) repository.UserRepository {
-	return userRepositoryImpl{db}
+	return &userRepositoryImpl{db}
 }
 
-func (r userRepositoryImpl) GetUsers(ctx context.Context) ([]*entity.User, error) {
+func (r *userRepositoryImpl) GetUsers(ctx context.Context) ([]*entity.User, error) {
 	us := make([]*gormmodel.User, 0)
 
 	if err := r.db.WithContext(ctx).Find(&us).Error; err != nil {
@@ -30,35 +31,27 @@ func (r userRepositoryImpl) GetUsers(ctx context.Context) ([]*entity.User, error
 	ret := make([]*entity.User, 0, len(us))
 
 	for _, u := range us {
-		ret = append(ret, &entity.User{
-			ID:           u.ID,
-			Name:         u.Name,
-			DisplayName:  u.DisplayName,
-			Bio:          u.Bio,
-			PasswordHash: u.PasswordHash,
-		})
+		entityUser := converter.ConvertGormModelUserToEntityUser(*u)
+
+		ret = append(ret, &entityUser)
 	}
 
 	return ret, nil
 }
 
-func (r userRepositoryImpl) GetUser(ctx context.Context, userID uuid.UUID) (*entity.User, error) {
+func (r *userRepositoryImpl) GetUser(ctx context.Context, userID uuid.UUID) (*entity.User, error) {
 	u := new(gormmodel.User)
 
 	if err := r.db.WithContext(ctx).Where(&gormmodel.User{ID: userID}).First(u).Error; err != nil {
 		return nil, err
 	}
 
-	return &entity.User{
-		ID:           u.ID,
-		Name:         u.Name,
-		DisplayName:  u.DisplayName,
-		Bio:          u.Bio,
-		PasswordHash: u.PasswordHash,
-	}, nil
+	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
+
+	return &entityUser, nil
 }
 
-func (r userRepositoryImpl) CreateUser(ctx context.Context, args repository.CreateUserArgs) (*entity.User, error) {
+func (r *userRepositoryImpl) CreateUser(ctx context.Context, args repository.CreateUserArgs) (*entity.User, error) {
 	ctxDB := r.db.WithContext(ctx)
 
 	user := gormmodel.User{
@@ -82,32 +75,24 @@ func (r userRepositoryImpl) CreateUser(ctx context.Context, args repository.Crea
 		return nil, err
 	}
 
-	return &entity.User{
-		ID:           u.ID,
-		Name:         u.Name,
-		DisplayName:  u.DisplayName,
-		Bio:          u.Bio,
-		PasswordHash: u.PasswordHash,
-	}, nil
+	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
+
+	return &entityUser, nil
 }
 
-func (r userRepositoryImpl) GetUserByName(ctx context.Context, userName string) (*entity.User, error) {
+func (r *userRepositoryImpl) GetUserByName(ctx context.Context, userName string) (*entity.User, error) {
 	u := new(gormmodel.User)
 
 	if err := r.db.WithContext(ctx).Where(&gormmodel.User{Name: userName}).First(u).Error; err != nil {
 		return nil, err
 	}
 
-	return &entity.User{
-		ID:           u.ID,
-		Name:         u.Name,
-		DisplayName:  u.DisplayName,
-		Bio:          u.Bio,
-		PasswordHash: u.PasswordHash,
-	}, nil
+	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
+
+	return &entityUser, nil
 }
 
-func (r userRepositoryImpl) UpdateUser(ctx context.Context, userID uuid.UUID, args repository.UpdateUserArgs) (*entity.User, error) {
+func (r *userRepositoryImpl) UpdateUser(ctx context.Context, userID uuid.UUID, args repository.UpdateUserArgs) (*entity.User, error) {
 	ctxDB := r.db.WithContext(ctx)
 
 	user := gormmodel.User{
@@ -130,11 +115,7 @@ func (r userRepositoryImpl) UpdateUser(ctx context.Context, userID uuid.UUID, ar
 		return nil, err
 	}
 
-	return &entity.User{
-		ID:           u.ID,
-		Name:         u.Name,
-		DisplayName:  u.DisplayName,
-		Bio:          u.Bio,
-		PasswordHash: u.PasswordHash,
-	}, nil
+	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
+
+	return &entityUser, nil
 }
