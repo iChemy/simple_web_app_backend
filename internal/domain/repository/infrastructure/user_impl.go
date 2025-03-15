@@ -25,7 +25,7 @@ func (r *userRepositoryImpl) GetUsers(ctx context.Context) ([]*entity.User, erro
 	us := make([]*gormmodel.User, 0)
 
 	if err := r.db.WithContext(ctx).Find(&us).Error; err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	ret := make([]*entity.User, 0, len(us))
@@ -43,7 +43,7 @@ func (r *userRepositoryImpl) GetUser(ctx context.Context, userID uuid.UUID) (*en
 	u := new(gormmodel.User)
 
 	if err := r.db.WithContext(ctx).Where(&gormmodel.User{ID: userID}).First(u).Error; err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
@@ -64,7 +64,7 @@ func (r *userRepositoryImpl) CreateUser(ctx context.Context, args repository.Cre
 
 	err := ctxDB.Create(&user).Error
 	if err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	u := new(gormmodel.User)
@@ -72,7 +72,7 @@ func (r *userRepositoryImpl) CreateUser(ctx context.Context, args repository.Cre
 	err = ctxDB.Where(&gormmodel.User{ID: args.ID}).First(u).Error
 
 	if err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
@@ -84,7 +84,7 @@ func (r *userRepositoryImpl) GetUserByName(ctx context.Context, userName string)
 	u := new(gormmodel.User)
 
 	if err := r.db.WithContext(ctx).Where(&gormmodel.User{Name: userName}).First(u).Error; err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	entityUser := converter.ConvertGormModelUserToEntityUser(*u)
@@ -105,14 +105,14 @@ func (r *userRepositoryImpl) UpdateUser(ctx context.Context, userID uuid.UUID, a
 
 	err := ctxDB.Save(&user).Error
 	if err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	u := new(gormmodel.User)
 
 	err = ctxDB.Where(&gormmodel.User{ID: userID}).First(u).Error
 	if err != nil {
-		return nil, err
+		return nil, gormErrorHandling(err)
 	}
 
 	entityUser := converter.ConvertGormModelUserToEntityUser(*u)

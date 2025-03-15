@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"log"
 	"time"
 
@@ -41,7 +40,7 @@ func NewSessionService(sessionRepository repository.SessionRepository) SessionSe
 func (s *sessionServiceImpl) GetAndPreserveUserID(ctx context.Context, cookieValue string) (context.Context, error) {
 	userID, err := s.r.GetUserID(ctx, cookieValue)
 	if err != nil {
-		return nil, err
+		return nil, customError(ErrInternal, "failed to get session", err)
 	}
 
 	// `userID` を Context に格納
@@ -65,7 +64,7 @@ func (s *sessionServiceImpl) SaveSession(ctx context.Context, userID uuid.UUID, 
 func (s *sessionServiceImpl) GetUserID(ctx context.Context) (uuid.UUID, error) {
 	userID, ok := ctx.Value(userIDKey).(uuid.UUID)
 	if !ok {
-		return uuid.UUID{}, errors.New("ctx has not been preserved userID")
+		return uuid.UUID{}, customError(ErrInternal, "failed to get session", nil)
 	}
 
 	return userID, nil

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"unicode"
 
 	"github.com/gofrs/uuid"
@@ -44,17 +45,17 @@ func (s *userService) GetUser(ctx context.Context, userID uuid.UUID) (*entity.Us
 func (s *userService) RegisterUser(ctx context.Context, args RegisterUserArgs) (*entity.User, error) {
 	if !isComplexPassword(args.Password) {
 		// これは BadRequest として処理されるべき
-		return nil, errors.New("password must contain at least one number and one letter")
+		return nil, customError(ErrBadRequest, "password must contain at least one number and one letter", nil)
 	}
 
 	userID, err := uuid.NewV7()
 	if err != nil {
-		return nil, err
+		return nil, customError(ErrInternal, "failed to create user", err)
 	}
 
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(args.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, err
+		return nil, customError(ErrInternal, "failed to create user", err)
 	}
 
 	createUserArgs := repository.CreateUserArgs{
@@ -66,8 +67,10 @@ func (s *userService) RegisterUser(ctx context.Context, args RegisterUserArgs) (
 
 	u, err := s.r.CreateUser(ctx, createUserArgs)
 	if err != nil {
-		// ユーザーネームの重複は BadRequest として処理されるべき
-		return nil, err
+		if errors.Is(err, repository.ErrDuplicatedKey) {
+			return nil, customError(ErrBadRequest, "username is already used", nil)
+		}
+		return nil, customError(ErrInternal, "failed to create user", nil)
 	}
 
 	return u, nil
@@ -76,12 +79,15 @@ func (s *userService) RegisterUser(ctx context.Context, args RegisterUserArgs) (
 func (s *userService) LoginUser(ctx context.Context, userName string, password string) (*entity.User, error) {
 	u, err := s.r.GetUserByName(ctx, userName)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, customError(ErrNotFound, fmt.Sprintf("user %s is not found", userName), err)
+		}
+		return nil, customError(ErrInternal, "failed to login", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, customError(ErrInternal, "failed to login", err)
 	}
 
 	return u, nil

@@ -2,7 +2,6 @@ package infrastructure
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
@@ -35,7 +34,7 @@ func (s *sessionRepository) GetUserID(_ context.Context, sessionID string) (uuid
 	defer s.mu.RUnlock()
 	userID, exists := s.data[sessionID]
 	if !exists {
-		return uuid.UUID{}, errors.New("session not found")
+		return uuid.UUID{}, repository.ErrSessionNotFound
 	}
 	return userID, nil
 }
