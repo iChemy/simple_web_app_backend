@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/gofrs/uuid"
 	"github.com/iChemy/simple_web_app_backend/internal/application/presentation"
 	"github.com/iChemy/simple_web_app_backend/internal/domain/service"
 	"github.com/labstack/echo/v4"
@@ -16,9 +15,9 @@ import (
 */
 
 type UserController struct {
-	s  *service.UserService
+	s  service.UserService
 	v  *validator.Validate
-	ss SessionStore
+	ss service.SessionService
 }
 
 type RegisterUserArgs struct {
@@ -29,8 +28,8 @@ type RegisterUserArgs struct {
 func (uc *UserController) Me(c echo.Context) error {
 	ctx := c.Request().Context()
 	// Context から `userID` を取得
-	userID, ok := ctx.Value(userIDKey).(uuid.UUID)
-	if !ok {
+	userID, err := uc.ss.GetUserID(ctx)
+	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 	}
 
@@ -100,9 +99,7 @@ func (uc *UserController) LoginUser(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
 	}
 
-	sessionID := generateSessionID()
-
-	err = uc.ss.SaveSession(ctx, sessionID, u.ID, time.Hour)
+	sessionID, err := uc.ss.SaveSession(ctx, u.ID, time.Hour)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create session"})
 	}

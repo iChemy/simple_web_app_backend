@@ -23,19 +23,25 @@ type RegisterUserArgs struct {
 	Password string
 }
 
-type UserService struct {
+type UserService interface {
+	GetUser(ctx context.Context, userID uuid.UUID) (*entity.User, error)
+	RegisterUser(ctx context.Context, args RegisterUserArgs) (*entity.User, error)
+	LoginUser(ctx context.Context, userName string, password string) (*entity.User, error)
+}
+
+type userService struct {
 	r repository.UserRepository
 }
 
 func NewUserService(userRepository repository.UserRepository) UserService {
-	return UserService{r: userRepository}
+	return &userService{r: userRepository}
 }
 
-func (s *UserService) GetUser(ctx context.Context, userID uuid.UUID) (*entity.User, error) {
+func (s *userService) GetUser(ctx context.Context, userID uuid.UUID) (*entity.User, error) {
 	return s.r.GetUser(ctx, userID)
 }
 
-func (s *UserService) RegisterUser(ctx context.Context, args RegisterUserArgs) (*entity.User, error) {
+func (s *userService) RegisterUser(ctx context.Context, args RegisterUserArgs) (*entity.User, error) {
 	if !isComplexPassword(args.Password) {
 		// これは BadRequest として処理されるべき
 		return nil, errors.New("password must contain at least one number and one letter")
@@ -67,7 +73,7 @@ func (s *UserService) RegisterUser(ctx context.Context, args RegisterUserArgs) (
 	return u, nil
 }
 
-func (s *UserService) LoginUser(ctx context.Context, userName string, password string) (*entity.User, error) {
+func (s *userService) LoginUser(ctx context.Context, userName string, password string) (*entity.User, error) {
 	u, err := s.r.GetUserByName(ctx, userName)
 	if err != nil {
 		return nil, err
